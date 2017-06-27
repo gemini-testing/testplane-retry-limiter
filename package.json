@@ -1,0 +1,40 @@
+{
+  "name": "retry-limiter",
+  "version": "1.0.0",
+  "description": "Plugin for gemini and hermione to reset the amount of retries in a runtime",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "npm run lint && npm run test-unit",
+    "test-unit": "mocha test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/gemini-testing/retry-limiter.git"
+  },
+  "keywords": [
+    "gemini",
+    "hermione",
+    "plugin",
+    "retry",
+    "retries",
+    "limit",
+    "limiter"
+  ],
+  "author": "Evgeniy Gavryushin <gavryushin@yandex-team.ru>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gemini-testing/retry-limiter/issues"
+  },
+  "homepage": "https://github.com/gemini-testing/retry-limiter#readme",
+  "dependencies": {
+    "gemini-configparser": "^0.3.0",
+    "lodash": "^4.17.4"
+  },
+  "devDependencies": {
+    "chai": "^4.0.2",
+    "eslint": "^3.19.0",
+    "eslint-config-gemini-testing": "^2.4.0",
+    "mocha": "^3.4.2",
+    "sinon": "^2.3.5"
+  }
+}
