@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/gemini-testing/retry-limiter#readme",
   "dependencies": {
-    "gemini-configparser": "^0.4.0",
+    "gemini-configparser": "^1.0.0",
     "lodash": "^4.17.4"
   },
   "devDependencies": {
