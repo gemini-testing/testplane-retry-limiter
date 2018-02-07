@@ -1,7 +1,7 @@
 'use strict';
 
-const _ = require('lodash');
 const ConfigDecorator = require('../../lib/config-decorator');
+const {createConfigStub} = require('../utils');
 
 describe('lib/config-decorator', () => {
     describe('.create()', () => {
@@ -11,19 +11,27 @@ describe('lib/config-decorator', () => {
     });
 
     describe('.disableRetries()', () => {
-        const createConfigStub = (browsers) => ({
-            getBrowserIds: sinon.stub().returns(_.keys(browsers)),
-            forBrowser: sinon.stub().callsFake((id) => browsers[id])
+        it('should extend config with "shouldRetry" function', () => {
+            const config = createConfigStub({
+                bro1: {},
+                bro2: {shouldRetry: () => true}
+            });
+            const newRetryRule = () => false;
+            const configDecorator = ConfigDecorator.create(config, newRetryRule);
+
+            configDecorator.disableRetries();
+
+            assert.equal(config.forBrowser('bro1').shouldRetry, newRetryRule);
+            assert.equal(config.forBrowser('bro2').shouldRetry, newRetryRule);
         });
 
-        it('should disable retries in all browsers', () => {
-            const config = createConfigStub({bro1: {retry: 100500}, bro2: {retry: 500100}});
+        it('should not modify "retry" field in config', () => {
+            const config = createConfigStub({bro: {retry: 8}});
             const configDecorator = ConfigDecorator.create(config);
 
             configDecorator.disableRetries();
 
-            assert.deepEqual(config.forBrowser('bro1'), {retry: 0});
-            assert.deepEqual(config.forBrowser('bro2'), {retry: 0});
+            assert.equal(config.forBrowser('bro').retry, 8);
         });
     });
 });

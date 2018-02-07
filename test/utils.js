@@ -17,3 +17,8 @@ exports.stubOpts = (opts) => {
         enabled: true
     });
 };
+
+exports.createConfigStub = (browsers) => ({
+    getBrowserIds: sinon.stub().returns(_.keys(browsers)),
+    forBrowser: sinon.stub().callsFake((id) => browsers[id])
+});

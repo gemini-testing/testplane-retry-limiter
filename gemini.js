@@ -12,14 +12,22 @@ module.exports = (gemini, opts) => {
         return;
     }
 
-    const configDecorator = ConfigDecorator.create(gemini.config);
+    const retryRuleAfterLimit = (data) => typeof data.equal === 'undefined' && data.retriesLeft > 0;
+    const configDecorator = ConfigDecorator.create(gemini.config, retryRuleAfterLimit);
 
     let retryLimiter;
 
     gemini.on(gemini.events.BEGIN, (data) => {
         retryLimiter = RetryLimiter.create(opts.limit, getTotalTestsCount(data.suiteCollection));
     });
-    gemini.on(gemini.events.RETRY, () => retryLimiter.exceedLimit() && configDecorator.disableRetries());
+    gemini.on(gemini.events.RETRY, function retryCallback() {
+        if (!retryLimiter.exceedLimit()) {
+            return;
+        }
+
+        configDecorator.disableRetries();
+        gemini.removeListener(gemini.events.RETRY, retryCallback);
+    });
 };
 
 function getTotalTestsCount(suiteCollection) {

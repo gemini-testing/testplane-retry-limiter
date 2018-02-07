@@ -2,6 +2,14 @@
 
 Plugin for [gemini](https://github.com/gemini-testing/gemini) and [hermione](https://github.com/gemini-testing/hermione/) to disable retries at runtime.
 
+## How it works?
+
+Plugin sets retries threshold. If it’s exceeded test will or will not be retried based on the result of `shouldRetry` function in config.
+
+For Gemini the rule is: if the test ends without result (nor `equal:false` nor `equal:true`) test will be retried if it’s attempts not exceeded.
+
+For Hermione the rule is: no retries.
+
 ## Install
 
 ```bash
@@ -10,12 +18,12 @@ $ npm install retry-limiter
 
 ## Usage
 
-### configuration
+### Configuration
 
 * **enabled** (optional) `Boolean` – enable/disable the plugin; default `true`.
 * **limit** (optional) `Number` – number in range from 0 to 1; if retries count to a total number of tests exceed the specified limit all next tests will be run without retries; default `1`.
 
-### gemini
+### Gemini
 
 Add the plugin to your configuration file:
 
@@ -31,7 +39,7 @@ module.exports = {
 };
 ```
 
-### hermione
+### Hermione
 
 ```js
 module.exports = {
