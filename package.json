@@ -1,6 +1,6 @@
 {
   "name": "retry-limiter",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Plugin for gemini and hermione to disable retries at runtime",
   "scripts": {
     "lint": "eslint .",
