@@ -4,8 +4,7 @@ const _ = require('lodash');
 const plugin = require('../hermione');
 const ConfigDecorator = require('../lib/config-decorator');
 const RetryLimiter = require('../lib/retry-limiter');
-const stubTool = require('./utils').stubTool;
-const stubOpts = require('./utils').stubOpts;
+const {createConfigStub, stubTool, stubOpts} = require('./utils');
 
 const Events = {
     AFTER_FILE_READ: 'fooBarAfterFileRead',
@@ -21,7 +20,6 @@ describe('hermione', () => {
 
     beforeEach(() => {
         sandbox.spy(ConfigDecorator, 'create');
-        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
 
         sandbox.spy(RetryLimiter, 'create');
         sandbox.stub(RetryLimiter.prototype, 'exceedLimit');
@@ -98,6 +96,8 @@ describe('hermione', () => {
     });
 
     it('should disable retries if retries count exceed a limit', () => {
+        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
+
         const hermione = stubHermione();
 
         RetryLimiter.prototype.exceedLimit
@@ -114,6 +114,8 @@ describe('hermione', () => {
     });
 
     it('should not disable retries if retries count does not exceed the limit', () => {
+        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
+
         const hermione = stubHermione();
 
         RetryLimiter.prototype.exceedLimit.returns(false);
@@ -125,5 +127,36 @@ describe('hermione', () => {
         hermione.emit(hermione.events.RETRY);
 
         assert.notCalled(ConfigDecorator.prototype.disableRetries);
+    });
+
+    it('should unsubscribe from RETRY event after exceed the limit', () => {
+        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
+
+        const hermione = stubHermione();
+
+        RetryLimiter.prototype.exceedLimit.returns(true);
+
+        initPlugin(hermione);
+
+        hermione.emit(hermione.events.BEGIN);
+        for (let i = 0; i < 10; i++) {
+            hermione.emit(hermione.events.RETRY);
+        }
+        assert.calledOnce(RetryLimiter.prototype.exceedLimit);
+        assert.calledOnce(ConfigDecorator.prototype.disableRetries);
+    });
+
+    it('shouldRetry() returns false after exceed a limit', () => {
+        const config = createConfigStub({bro: {}});
+        const hermione = stubHermione(config);
+
+        RetryLimiter.prototype.exceedLimit.returns(true);
+
+        initPlugin(hermione);
+
+        hermione.emit(hermione.events.BEGIN);
+        hermione.emit(hermione.events.RETRY);
+
+        assert.equal(config.forBrowser('bro').shouldRetry(), false);
     });
 });

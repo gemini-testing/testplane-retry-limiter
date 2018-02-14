@@ -3,8 +3,7 @@
 const plugin = require('../gemini');
 const ConfigDecorator = require('../lib/config-decorator');
 const RetryLimiter = require('../lib/retry-limiter');
-const stubTool = require('./utils').stubTool;
-const stubOpts = require('./utils').stubOpts;
+const {createConfigStub, stubTool, stubOpts} = require('./utils');
 
 const Events = {
     BEGIN: 'fooBarBegin',
@@ -31,7 +30,6 @@ describe('gemini', () => {
 
     beforeEach(() => {
         sandbox.spy(ConfigDecorator, 'create');
-        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
 
         sandbox.spy(RetryLimiter, 'create');
         sandbox.stub(RetryLimiter.prototype, 'exceedLimit');
@@ -97,6 +95,7 @@ describe('gemini', () => {
     });
 
     it('should disable retries if retries count exceed a limit', () => {
+        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
         const gemini = stubGemini();
 
         RetryLimiter.prototype.exceedLimit
@@ -113,6 +112,7 @@ describe('gemini', () => {
     });
 
     it('should not disable retries if retries count does not exceed the limit', () => {
+        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
         const gemini = stubGemini();
 
         RetryLimiter.prototype.exceedLimit.returns(false);
@@ -124,5 +124,59 @@ describe('gemini', () => {
         gemini.emit(gemini.events.RETRY);
 
         assert.notCalled(ConfigDecorator.prototype.disableRetries);
+    });
+
+    it('should unsubscribe from RETRY event after exceed the limit', () => {
+        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
+        const gemini = stubGemini();
+
+        RetryLimiter.prototype.exceedLimit.returns(true);
+
+        initPlugin(gemini);
+
+        gemini.emit(gemini.events.BEGIN, {suiteCollection: stubSuiteCollection()});
+        for (let i = 0; i < 10; i++) {
+            gemini.emit(gemini.events.RETRY);
+        }
+        assert.calledOnce(RetryLimiter.prototype.exceedLimit);
+        assert.calledOnce(ConfigDecorator.prototype.disableRetries);
+    });
+
+    it('shouldRetry() implementation', () => {
+        const config = createConfigStub({bro: {}});
+        const gemini = stubGemini(config);
+
+        RetryLimiter.prototype.exceedLimit.returns(true);
+
+        initPlugin(gemini);
+
+        gemini.emit(gemini.events.BEGIN, {suiteCollection: stubSuiteCollection()});
+        gemini.emit(gemini.events.RETRY);
+
+        const shouldRetry = config.forBrowser('bro').shouldRetry;
+
+        assert.equal(
+            shouldRetry({retriesLeft: 3/* no "equal" field */}),
+            true,
+            'should allow retries for test without result despite the total retries limit was exceeded'
+        );
+
+        assert.equal(
+            shouldRetry({retriesLeft: 3, equal: false}),
+            false,
+            'should disallow retry for test with result because the total retries limit was exceeded'
+        );
+
+        assert.equal(
+            shouldRetry({retriesLeft: 0/* no "equal" field */}),
+            false,
+            'should disallow retry for test without result because the test’s attempts was run out'
+        );
+
+        assert.equal(
+            shouldRetry({retriesLeft: 0, equal: false}),
+            false,
+            'should disallow retry for test with result because the test’s attempts was run out'
+        );
     });
 });

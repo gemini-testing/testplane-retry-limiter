@@ -11,7 +11,8 @@ module.exports = (hermione, opts) => {
         return;
     }
 
-    const configDecorator = ConfigDecorator.create(hermione.config);
+    const retryRuleAfterLimit = () => false;
+    const configDecorator = ConfigDecorator.create(hermione.config, retryRuleAfterLimit);
 
     let retryLimiter;
     let totalTestsCount = 0;
@@ -27,5 +28,12 @@ module.exports = (hermione, opts) => {
         retryLimiter = RetryLimiter.create(opts.limit, totalTestsCount);
         hasBegun = true;
     });
-    hermione.on(hermione.events.RETRY, () => retryLimiter.exceedLimit() && configDecorator.disableRetries());
+    hermione.on(hermione.events.RETRY, function retryCallback() {
+        if (!retryLimiter.exceedLimit()) {
+            return;
+        }
+
+        configDecorator.disableRetries();
+        hermione.removeListener(hermione.events.RETRY, retryCallback);
+    });
 };
