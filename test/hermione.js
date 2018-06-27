@@ -7,16 +7,26 @@ const RetryLimiter = require('../lib/retry-limiter');
 const {createConfigStub, stubTool, stubOpts} = require('./utils');
 
 const Events = {
-    AFTER_FILE_READ: 'fooBarAfterFileRead',
-    BEGIN: 'fooBarBegin',
+    AFTER_TESTS_READ: 'fooBarAfterTestsRead',
     RETRY: 'fooBarRetry'
 };
 
 describe('hermione', () => {
     const sandbox = sinon.sandbox.create();
 
-    const stubHermione = (config) => stubTool(Events, config);
+    const stubHermione = (config) => {
+        const hermione = stubTool(Events, config);
+        hermione.isWorker = () => false;
+        return hermione;
+    };
+
     const initPlugin = (hermione, opts) => plugin(hermione, stubOpts(opts));
+
+    const mkTestCollection = (tests = []) => {
+        return {
+            eachTest: (cb) => tests.forEach(cb)
+        };
+    };
 
     beforeEach(() => {
         sandbox.spy(ConfigDecorator, 'create');
@@ -26,6 +36,16 @@ describe('hermione', () => {
     });
 
     afterEach(() => sandbox.restore());
+
+    it('should do nothing in worker', () => {
+        const hermione = stubHermione();
+        hermione.isWorker = () => true;
+        sandbox.spy(hermione, 'on');
+
+        initPlugin(hermione);
+
+        assert.notCalled(hermione.on);
+    });
 
     it('should do nothing if plugin is disabled', () => {
         const hermione = stubHermione();
@@ -42,31 +62,38 @@ describe('hermione', () => {
         assert.calledOnceWith(ConfigDecorator.create, {some: 'config'});
     });
 
-    it('should create a retry limiter', () => {
-        const hermione = stubHermione();
-
-        initPlugin(hermione, {limit: 0.9});
-
-        hermione.emit(hermione.events.BEGIN);
-
-        assert.calledOnceWith(RetryLimiter.create, 0.9);
-    });
-
-    describe('total tests count', () => {
-        const stubSuite = (tests) => ({suite: {eachTest: sinon.stub().callsFake((cb) => tests.forEach(cb))}});
+    describe('on AFTER_TESTS_READ event', () => {
         const stubTest = (opts) => _.defaults(opts || {}, {pending: false});
 
-        it('should define a total tests count on "BEGIN" event', () => {
+        it('should create retry limiter', () => {
             const hermione = stubHermione();
 
             initPlugin(hermione);
 
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest()]));
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest(), stubTest()]));
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest(), stubTest(), stubTest()]));
-            hermione.emit(hermione.events.BEGIN);
+            hermione.emit(hermione.events.AFTER_TESTS_READ, mkTestCollection());
 
-            assert.calledWith(RetryLimiter.create, sinon.match.any, 1 + 2 + 3);
+            assert.calledOnce(RetryLimiter.create);
+        });
+
+        it('should pass limit option to retry limiter', () => {
+            const hermione = stubHermione();
+
+            initPlugin(hermione, {limit: 0.9});
+
+            hermione.emit(hermione.events.AFTER_TESTS_READ, mkTestCollection());
+
+            assert.calledOnceWith(RetryLimiter.create, 0.9);
+        });
+
+        it('should pass total test count to retry limiter', () => {
+            const hermione = stubHermione();
+
+            initPlugin(hermione);
+
+            const tests = [stubTest(), stubTest()];
+            hermione.emit(hermione.events.AFTER_TESTS_READ, mkTestCollection(tests));
+
+            assert.calledOnceWith(RetryLimiter.create, sinon.match.any, tests.length);
         });
 
         it('should not consider pending tests in a total tests count', () => {
@@ -74,89 +101,74 @@ describe('hermione', () => {
 
             initPlugin(hermione);
 
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest({pending: true})]));
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest({pending: true}), stubTest()]));
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest(), stubTest()]));
-            hermione.emit(hermione.events.BEGIN);
+            const tests = [
+                stubTest(),
+                stubTest({pending: true}),
+                stubTest()
+            ];
+            hermione.emit(hermione.events.AFTER_TESTS_READ, mkTestCollection(tests));
 
-            assert.calledWith(RetryLimiter.create, sinon.match.any, 0 + 1 + 2);
+            assert.calledOnceWith(RetryLimiter.create, sinon.match.any, 2);
         });
+    });
 
-        it('should not increment a total tests count if "AFTER_FILE_READ" event was triggered after "BEGIN" one', () => {
-            const hermione = stubHermione();
-
+    describe('on RETRY event', () => {
+        const init_ = (config) => {
+            const hermione = stubHermione(config || createConfigStub());
             initPlugin(hermione);
 
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest()]));
-            hermione.emit(hermione.events.BEGIN);
-            hermione.emit(hermione.events.AFTER_FILE_READ, stubSuite([stubTest()]));
+            hermione.emit(hermione.events.AFTER_TESTS_READ, mkTestCollection());
+            return hermione;
+        };
 
-            assert.calledWith(RetryLimiter.create, sinon.match.any, 1);
-        });
-    });
+        it('should disable retries if retries count exceed a limit', () => {
+            sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
 
-    it('should disable retries if retries count exceed a limit', () => {
-        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
+            RetryLimiter.prototype.exceedLimit
+                .onFirstCall().returns(false)
+                .onSecondCall().returns(true);
 
-        const hermione = stubHermione();
-
-        RetryLimiter.prototype.exceedLimit
-            .onFirstCall().returns(false)
-            .onSecondCall().returns(true);
-
-        initPlugin(hermione);
-
-        hermione.emit(hermione.events.BEGIN);
-        hermione.emit(hermione.events.RETRY);
-        hermione.emit(hermione.events.RETRY);
-
-        assert.calledOnce(ConfigDecorator.prototype.disableRetries);
-    });
-
-    it('should not disable retries if retries count does not exceed the limit', () => {
-        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
-
-        const hermione = stubHermione();
-
-        RetryLimiter.prototype.exceedLimit.returns(false);
-
-        initPlugin(hermione);
-
-        hermione.emit(hermione.events.BEGIN);
-        hermione.emit(hermione.events.RETRY);
-        hermione.emit(hermione.events.RETRY);
-
-        assert.notCalled(ConfigDecorator.prototype.disableRetries);
-    });
-
-    it('should unsubscribe from RETRY event after exceed the limit', () => {
-        sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
-
-        const hermione = stubHermione();
-
-        RetryLimiter.prototype.exceedLimit.returns(true);
-
-        initPlugin(hermione);
-
-        hermione.emit(hermione.events.BEGIN);
-        for (let i = 0; i < 10; i++) {
+            const hermione = init_();
             hermione.emit(hermione.events.RETRY);
-        }
-        assert.calledOnce(RetryLimiter.prototype.exceedLimit);
-        assert.calledOnce(ConfigDecorator.prototype.disableRetries);
-    });
+            hermione.emit(hermione.events.RETRY);
 
-    it('shouldRetry() returns false after exceed a limit', () => {
-        const config = createConfigStub({bro: {}});
-        const hermione = stubHermione(config);
+            assert.calledOnce(ConfigDecorator.prototype.disableRetries);
+        });
 
-        RetryLimiter.prototype.exceedLimit.returns(true);
+        it('should not disable retries if retries count does not exceed the limit', () => {
+            sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
 
-        initPlugin(hermione);
+            RetryLimiter.prototype.exceedLimit.returns(false);
 
-        hermione.emit(hermione.events.BEGIN);
-        hermione.emit(hermione.events.RETRY);
+            const hermione = init_();
+            hermione.emit(hermione.events.RETRY);
+            hermione.emit(hermione.events.RETRY);
 
-        assert.equal(config.forBrowser('bro').shouldRetry(), false);
+            assert.notCalled(ConfigDecorator.prototype.disableRetries);
+        });
+
+        it('should unsubscribe from RETRY event after exceed the limit', () => {
+            sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
+
+            RetryLimiter.prototype.exceedLimit.returns(true);
+
+            const hermione = init_();
+            for (let i = 0; i < 10; i++) {
+                hermione.emit(hermione.events.RETRY);
+            }
+            assert.calledOnce(RetryLimiter.prototype.exceedLimit);
+            assert.calledOnce(ConfigDecorator.prototype.disableRetries);
+        });
+
+        it('shouldRetry() returns false after exceed a limit', () => {
+            const config = createConfigStub({bro: {}});
+            const hermione = init_(config);
+
+            RetryLimiter.prototype.exceedLimit.returns(true);
+
+            hermione.emit(hermione.events.RETRY);
+
+            assert.equal(config.forBrowser('bro').shouldRetry(), false);
+        });
     });
 });
