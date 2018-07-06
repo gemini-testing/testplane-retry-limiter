@@ -110,6 +110,21 @@ describe('hermione', () => {
 
             assert.calledOnceWith(RetryLimiter.create, sinon.match.any, 2);
         });
+
+        it('should not consider disabled tests in a total tests count', () => {
+            const hermione = stubHermione();
+
+            initPlugin(hermione);
+
+            const tests = [
+                stubTest(),
+                stubTest({disabled: true}),
+                stubTest()
+            ];
+            hermione.emit(hermione.events.AFTER_TESTS_READ, mkTestCollection(tests));
+
+            assert.calledOnceWith(RetryLimiter.create, sinon.match.any, 2);
+        });
     });
 
     describe('on RETRY event', () => {

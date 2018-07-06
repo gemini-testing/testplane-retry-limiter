@@ -21,7 +21,7 @@ module.exports = (hermione, opts) => {
 
     hermione.on(hermione.events.AFTER_TESTS_READ, (collection) => {
         let totalTestsCount = 0;
-        collection.eachTest((test) => test.pending || ++totalTestsCount);
+        collection.eachTest((test) => test.pending || test.disabled || ++totalTestsCount);
 
         retryLimiter = RetryLimiter.create(opts.limit, totalTestsCount);
     });
