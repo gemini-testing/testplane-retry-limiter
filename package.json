@@ -1,11 +1,13 @@
 {
   "name": "retry-limiter",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Plugin for gemini and hermione to disable retries at runtime",
   "scripts": {
+    "coverage": "nyc npm run test",
     "lint": "eslint .",
     "test": "npm run test-unit && npm run lint",
-    "test-unit": "mocha test"
+    "test-unit": "mocha test",
+    "release": "standard-version"
   },
   "repository": {
     "type": "git",
@@ -28,13 +30,15 @@
   "homepage": "https://github.com/gemini-testing/retry-limiter#readme",
   "dependencies": {
     "gemini-configparser": "^1.0.0",
-    "lodash": "^4.17.4"
+    "lodash": "4.17.11"
   },
   "devDependencies": {
-    "chai": "^4.0.2",
-    "eslint": "^3.19.0",
-    "eslint-config-gemini-testing": "^2.4.0",
-    "mocha": "^3.4.2",
-    "sinon": "^2.3.5"
+    "chai": "4.2.0",
+    "eslint": "6.0.0",
+    "eslint-config-gemini-testing": "2.8.0",
+    "mocha": "6.1.4",
+    "nyc": "14.1.1",
+    "sinon": "7.3.2",
+    "standard-version": "6.0.1"
   }
 }
