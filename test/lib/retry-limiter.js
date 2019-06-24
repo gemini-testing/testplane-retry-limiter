@@ -21,10 +21,12 @@ describe('lib/retry-limiter', () => {
         });
 
         it('should return "false" until limit is exceeded', () => {
-            const retryLimiter = createRetryLimiter({limit: 0.9, totalTestsCount: 3});
+            const count = 11;
+            const retryLimiter = createRetryLimiter({limit: 0.9, totalTestsCount: count});
 
-            assert.isFalse(retryLimiter.exceedLimit());
-            assert.isFalse(retryLimiter.exceedLimit());
+            for (let i = 0; i < count - 1; ++i) {
+                assert.isFalse(retryLimiter.exceedLimit());
+            }
             assert.isTrue(retryLimiter.exceedLimit());
         });
     });
