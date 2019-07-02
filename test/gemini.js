@@ -1,8 +1,9 @@
 'use strict';
 
 const plugin = require('../gemini');
-const ConfigDecorator = require('../lib/config-decorator');
+const ConfigDecorator = require('../lib/gemini-config-decorator');
 const RetryLimiter = require('../lib/retry-limiter');
+const logger = require('../lib/logger');
 const {createConfigStub, stubTool, stubOpts} = require('./utils');
 
 const Events = {
@@ -11,7 +12,7 @@ const Events = {
 };
 
 describe('gemini', () => {
-    const sandbox = sinon.sandbox.create();
+    const sandbox = sinon.createSandbox();
 
     const stubGemini = (config) => stubTool(Events, config);
     const initPlugin = (gemini, opts) => plugin(gemini, stubOpts(opts));
@@ -33,6 +34,7 @@ describe('gemini', () => {
 
         sandbox.spy(RetryLimiter, 'create');
         sandbox.stub(RetryLimiter.prototype, 'exceedLimit');
+        sandbox.stub(logger, 'info');
     });
 
     afterEach(() => sandbox.restore());

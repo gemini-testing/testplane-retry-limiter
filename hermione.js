@@ -3,6 +3,7 @@
 const ConfigDecorator = require('./lib/config-decorator');
 const parseOpts = require('./lib/plugin-opts');
 const RetryLimiter = require('./lib/retry-limiter');
+const logger = require('./lib/logger');
 
 module.exports = (hermione, opts) => {
     if (hermione.isWorker()) {
@@ -14,8 +15,7 @@ module.exports = (hermione, opts) => {
         return;
     }
 
-    const retryRuleAfterLimit = () => false;
-    const configDecorator = ConfigDecorator.create(hermione.config, retryRuleAfterLimit);
+    const configDecorator = ConfigDecorator.create(hermione.config);
 
     let retryLimiter;
 
@@ -34,4 +34,9 @@ module.exports = (hermione, opts) => {
         configDecorator.disableRetries();
         hermione.removeListener(hermione.events.RETRY, retryCallback);
     });
+
+    if (Number.isFinite(opts.setRetriesOnTestFail)) {
+        logger.info(`will set retries to ${opts.setRetriesOnTestFail} after the first failed test`);
+        hermione.once(hermione.events.TEST_FAIL, () => configDecorator.setRetries(opts.setRetriesOnTestFail));
+    }
 };

@@ -22,6 +22,7 @@ $ npm install retry-limiter
 
 * **enabled** (optional) `Boolean` – enable/disable the plugin; default `true`.
 * **limit** (optional) `Number` – number in range from 0 to 1; if retries count to a total number of tests exceed the specified limit all next tests will be run without retries; default `1`.
+* **setRetriesOnTestFail** (optional) `Number` – set retries to the given value after the first test fail; default `Infinity` (retries will not be reset). **Option is supported only in hermione**. 
 
 ### Gemini
 
@@ -45,7 +46,8 @@ module.exports = {
 module.exports = {
     plugins: {
         'retry-limiter/hermione': {
-            limit: 0.3
+            limit: 0.3,
+            setRetriesOnTestFail: 1
         }
     }
 };

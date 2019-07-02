@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-const ConfigDecorator = require('./lib/config-decorator');
+const ConfigDecorator = require('./lib/gemini-config-decorator');
 const parseOpts = require('./lib/plugin-opts');
 const RetryLimiter = require('./lib/retry-limiter');
 
@@ -12,8 +12,7 @@ module.exports = (gemini, opts) => {
         return;
     }
 
-    const retryRuleAfterLimit = (data) => typeof data.equal === 'undefined' && data.retriesLeft > 0;
-    const configDecorator = ConfigDecorator.create(gemini.config, retryRuleAfterLimit);
+    const configDecorator = ConfigDecorator.create(gemini.config);
 
     let retryLimiter;
 
