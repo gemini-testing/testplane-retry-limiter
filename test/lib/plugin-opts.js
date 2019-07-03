@@ -75,4 +75,39 @@ describe('plugin-opts', () => {
             assert.deepEqual(pluginOpts({limit: '0.5'}).limit, 0.9);
         });
     });
+
+    describe('setRetriesOnTestFail', () => {
+        it('should throw if a value from a config is not a non negative integer', () => {
+            assert.throws(() => pluginOpts({setRetriesOnTestFail: -1}), 'Option "setRetriesOnTestFail" must be a non negative integer or "Infinity"');
+            assert.throws(() => pluginOpts({setRetriesOnTestFail: 1.1}), 'Option "setRetriesOnTestFail" must be a non negative integer or "Infinity"');
+        });
+
+        it('should throw if a value from an environment is not a non negative integer', () => {
+            process.env['retry_limiter_set_retries_on_test_fail'] = '-1';
+            assert.throws(() => pluginOpts(), 'Option "setRetriesOnTestFail" must be a non negative integer or "Infinity"');
+
+            process.env['retry_limiter_set_retries_on_test_fail'] = '1.1';
+            assert.throws(() => pluginOpts(), 'Option "setRetriesOnTestFail" must be a non negative integer or "Infinity"');
+        });
+
+        it('should be "Infinity" by default', () => {
+            assert.deepEqual(pluginOpts().setRetriesOnTestFail, Infinity);
+        });
+
+        it('should be overridden by a value from a config', () => {
+            assert.deepEqual(pluginOpts({setRetriesOnTestFail: 0}).setRetriesOnTestFail, 0);
+        });
+
+        it('should be overridden by a value from an environment', () => {
+            process.env['retry_limiter_set_retries_on_test_fail'] = '0';
+
+            assert.deepEqual(pluginOpts().setRetriesOnTestFail, 0);
+        });
+
+        it('should use a value from an environment instead of a value from a config', () => {
+            process.env['retry_limiter_set_retries_on_test_fail'] = 'Infinity';
+
+            assert.deepEqual(pluginOpts({setRetriesOnTestFail: 1}).setRetriesOnTestFail, Infinity);
+        });
+    });
 });

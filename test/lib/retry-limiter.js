@@ -1,8 +1,17 @@
 'use strict';
 
 const RetryLimiter = require('../../lib/retry-limiter');
+const logger = require('../../lib/logger');
 
 describe('lib/retry-limiter', () => {
+    const sandbox = sinon.createSandbox();
+
+    beforeEach(() => {
+        sandbox.stub(logger, 'info');
+    });
+
+    afterEach(() => sandbox.restore());
+
     describe('.create()', () => {
         it('should create an instance of a retry limiter', () => {
             assert.instanceOf(RetryLimiter.create(), RetryLimiter);
