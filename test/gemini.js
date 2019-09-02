@@ -2,7 +2,7 @@
 
 const plugin = require('../gemini');
 const ConfigDecorator = require('../lib/gemini-config-decorator');
-const RetryLimiter = require('../lib/retry-limiter');
+const Limiter = require('../lib/limiter');
 const logger = require('../lib/logger');
 const {createConfigStub, stubTool, stubOpts} = require('./utils');
 
@@ -32,8 +32,8 @@ describe('gemini', () => {
     beforeEach(() => {
         sandbox.spy(ConfigDecorator, 'create');
 
-        sandbox.spy(RetryLimiter, 'create');
-        sandbox.stub(RetryLimiter.prototype, 'exceedLimit');
+        sandbox.spy(Limiter, 'create');
+        sandbox.stub(Limiter.prototype, 'exceedRetriesLimit');
         sandbox.stub(logger, 'info');
     });
 
@@ -61,7 +61,7 @@ describe('gemini', () => {
 
         gemini.emit(gemini.events.BEGIN, {suiteCollection: stubSuiteCollection()});
 
-        assert.calledOnceWith(RetryLimiter.create, 0.9);
+        assert.calledOnceWith(Limiter.create, {limit: 0.9});
     });
 
     describe('total tests count', () => {
@@ -77,7 +77,7 @@ describe('gemini', () => {
 
             gemini.emit(gemini.events.BEGIN, {suiteCollection});
 
-            assert.calledWith(RetryLimiter.create, sinon.match.any, 3 * 2 + 4 * 0 + 2 * 1);
+            assert.calledWith(Limiter.create, sinon.match.any, 3 * 2 + 4 * 0 + 2 * 1);
         });
 
         it('should not consider pending tests in a total tests count', () => {
@@ -92,7 +92,7 @@ describe('gemini', () => {
 
             gemini.emit(gemini.events.BEGIN, {suiteCollection});
 
-            assert.calledWith(RetryLimiter.create, sinon.match.any, 3 * 1 + 4 * 0 + 2 * 2);
+            assert.calledWith(Limiter.create, sinon.match.any, 3 * 1 + 4 * 0 + 2 * 2);
         });
     });
 
@@ -100,7 +100,7 @@ describe('gemini', () => {
         sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
         const gemini = stubGemini();
 
-        RetryLimiter.prototype.exceedLimit
+        Limiter.prototype.exceedRetriesLimit
             .onFirstCall().returns(false)
             .onSecondCall().returns(true);
 
@@ -117,7 +117,7 @@ describe('gemini', () => {
         sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
         const gemini = stubGemini();
 
-        RetryLimiter.prototype.exceedLimit.returns(false);
+        Limiter.prototype.exceedRetriesLimit.returns(false);
 
         initPlugin(gemini);
 
@@ -132,7 +132,7 @@ describe('gemini', () => {
         sandbox.stub(ConfigDecorator.prototype, 'disableRetries');
         const gemini = stubGemini();
 
-        RetryLimiter.prototype.exceedLimit.returns(true);
+        Limiter.prototype.exceedRetriesLimit.returns(true);
 
         initPlugin(gemini);
 
@@ -140,7 +140,7 @@ describe('gemini', () => {
         for (let i = 0; i < 10; i++) {
             gemini.emit(gemini.events.RETRY);
         }
-        assert.calledOnce(RetryLimiter.prototype.exceedLimit);
+        assert.calledOnce(Limiter.prototype.exceedRetriesLimit);
         assert.calledOnce(ConfigDecorator.prototype.disableRetries);
     });
 
@@ -148,7 +148,7 @@ describe('gemini', () => {
         const config = createConfigStub({bro: {}});
         const gemini = stubGemini(config);
 
-        RetryLimiter.prototype.exceedLimit.returns(true);
+        Limiter.prototype.exceedRetriesLimit.returns(true);
 
         initPlugin(gemini);
 

@@ -4,7 +4,7 @@ Plugin for [gemini](https://github.com/gemini-testing/gemini) and [hermione](htt
 
 ## How it works?
 
-Plugin sets retries threshold. If it’s exceeded test will or will not be retried based on the result of `shouldRetry` function in config.
+Plugin sets retries and duration threshold. If it’s exceeded test will or will not be retried based on the result of `shouldRetry` function in config.
 
 For Gemini the rule is: if the test ends without result (nor `equal:false` nor `equal:true`) test will be retried if it’s attempts not exceeded.
 
@@ -22,7 +22,11 @@ $ npm install retry-limiter
 
 * **enabled** (optional) `Boolean` – enable/disable the plugin; default `true`.
 * **limit** (optional) `Number` – number in range from 0 to 1; if retries count to a total number of tests exceed the specified limit all next tests will be run without retries; default `1`.
-* **setRetriesOnTestFail** (optional) `Number` – set retries to the given value after the first test fail; default `Infinity` (retries will not be reset). **Option is supported only in hermione**. 
+
+#### Hermione only
+
+* **setRetriesOnTestFail** (optional) `Number` – set retries to the given value after the first test fail; default `Infinity` (retries will not be reset).
+* **timeLimit** (optional) `Number` - time in seconds; if test duration exceeds the specified limit all next tests will be run without retries; default `Infinity`.
 
 ### Gemini
 
@@ -47,7 +51,8 @@ module.exports = {
     plugins: {
         'retry-limiter/hermione': {
             limit: 0.3,
-            setRetriesOnTestFail: 1
+            setRetriesOnTestFail: 1,
+            timeLimit: 600
         }
     }
 };
