@@ -110,4 +110,39 @@ describe('plugin-opts', () => {
             assert.deepEqual(pluginOpts({setRetriesOnTestFail: 1}).setRetriesOnTestFail, Infinity);
         });
     });
+
+    describe('timeLimit', () => {
+        it('should throw if a value from a config is not a non negative integer', () => {
+            assert.throws(() => pluginOpts({timeLimit: -1}), 'Option "timeLimit" must be a non negative integer or "Infinity"');
+            assert.throws(() => pluginOpts({timeLimit: 1.1}), 'Option "timeLimit" must be a non negative integer or "Infinity"');
+        });
+
+        it('should throw if a value from an environment is not a non negative integer', () => {
+            process.env['retry_limiter_time_limit'] = '-1';
+            assert.throws(() => pluginOpts(), 'Option "timeLimit" must be a non negative integer or "Infinity"');
+
+            process.env['retry_limiter_time_limit'] = '1.1';
+            assert.throws(() => pluginOpts(), 'Option "timeLimit" must be a non negative integer or "Infinity"');
+        });
+
+        it('should be "Infinity" by default', () => {
+            assert.deepEqual(pluginOpts().timeLimit, Infinity);
+        });
+
+        it('should be overridden by a value from a config', () => {
+            assert.deepEqual(pluginOpts({timeLimit: 0}).timeLimit, 0);
+        });
+
+        it('should be overridden by a value from an environment', () => {
+            process.env['retry_limiter_time_limit'] = '0';
+
+            assert.deepEqual(pluginOpts().timeLimit, 0);
+        });
+
+        it('should use a value from an environment instead of a value from a config', () => {
+            process.env['retry_limiter_time_limit'] = 'Infinity';
+
+            assert.deepEqual(pluginOpts({timeLimit: 1}).timeLimit, Infinity);
+        });
+    });
 });

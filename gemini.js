@@ -3,7 +3,7 @@
 const _ = require('lodash');
 const ConfigDecorator = require('./lib/gemini-config-decorator');
 const parseOpts = require('./lib/plugin-opts');
-const RetryLimiter = require('./lib/retry-limiter');
+const Limiter = require('./lib/limiter');
 
 module.exports = (gemini, opts) => {
     opts = parseOpts(opts);
@@ -14,13 +14,13 @@ module.exports = (gemini, opts) => {
 
     const configDecorator = ConfigDecorator.create(gemini.config);
 
-    let retryLimiter;
+    let limiter;
 
     gemini.on(gemini.events.BEGIN, (data) => {
-        retryLimiter = RetryLimiter.create(opts.limit, getTotalTestsCount(data.suiteCollection));
+        limiter = Limiter.create({limit: opts.limit}, getTotalTestsCount(data.suiteCollection));
     });
     gemini.on(gemini.events.RETRY, function retryCallback() {
-        if (!retryLimiter.exceedLimit()) {
+        if (!limiter.exceedRetriesLimit()) {
             return;
         }
 
