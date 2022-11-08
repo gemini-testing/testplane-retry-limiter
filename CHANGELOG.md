@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/gemini-testing/retry-limiter/compare/v3.3.0...v4.0.0) (2022-11-08)
+
+
+### Features
+
+* remove gemini support ([62cd074](https://github.com/gemini-testing/retry-limiter/commit/62cd074))
+
+
+### BREAKING CHANGES
+
+* drop gemini support
+
+
+
 ## [3.3.0](https://github.com/gemini-testing/retry-limiter/compare/v3.2.0...v3.3.0) (2019-09-05)
 
 
