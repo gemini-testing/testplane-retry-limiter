@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-const plugin = require('../hermione');
+const plugin = require('../');
 const ConfigDecorator = require('../lib/config-decorator');
 const Limiter = require('../lib/limiter');
 const logger = require('../lib/logger');
@@ -14,7 +14,7 @@ const Events = {
     RETRY: 'fooBarRetry'
 };
 
-describe('hermione', () => {
+describe('plugin', () => {
     const sandbox = sinon.createSandbox();
 
     const stubHermione = (config) => {

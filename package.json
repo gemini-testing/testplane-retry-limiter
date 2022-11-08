@@ -1,7 +1,7 @@
 {
   "name": "retry-limiter",
   "version": "3.3.0",
-  "description": "Plugin for gemini and hermione to disable retries at runtime",
+  "description": "Plugin for hermione to disable retries at runtime",
   "scripts": {
     "coverage": "nyc npm run test",
     "lint": "eslint .",
@@ -14,7 +14,6 @@
     "url": "git+ssh://git@github.com/gemini-testing/retry-limiter.git"
   },
   "keywords": [
-    "gemini",
     "hermione",
     "plugin",
     "retry",
