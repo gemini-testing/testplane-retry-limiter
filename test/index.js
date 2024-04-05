@@ -17,7 +17,7 @@ const Events = {
 describe('plugin', () => {
     const sandbox = sinon.createSandbox();
 
-    const stubHermione = (config) => {
+    const stubTestplane = (config) => {
         const hermione = stubTool(Events, config);
         hermione.isWorker = () => false;
         return hermione;
@@ -32,7 +32,7 @@ describe('plugin', () => {
     };
 
     const init_ = (opts) => {
-        const hermione = stubHermione(createConfigStub());
+        const hermione = stubTestplane(createConfigStub());
         initPlugin(hermione, opts);
 
         hermione.emit(hermione.events.AFTER_TESTS_READ, mkTestCollection());
@@ -54,7 +54,7 @@ describe('plugin', () => {
     afterEach(() => sandbox.restore());
 
     it('should do nothing in worker', () => {
-        const hermione = stubHermione();
+        const hermione = stubTestplane();
         hermione.isWorker = () => true;
         sandbox.spy(hermione, 'on');
 
@@ -64,7 +64,7 @@ describe('plugin', () => {
     });
 
     it('should do nothing if plugin is disabled', () => {
-        const hermione = stubHermione();
+        const hermione = stubTestplane();
         sandbox.spy(hermione, 'on');
 
         initPlugin(hermione, {enabled: false});
@@ -73,7 +73,7 @@ describe('plugin', () => {
     });
 
     it('should create a config decorator', () => {
-        initPlugin(stubHermione({some: 'config'}));
+        initPlugin(stubTestplane({some: 'config'}));
 
         assert.calledOnceWith(ConfigDecorator.create, {some: 'config'});
     });
@@ -82,7 +82,7 @@ describe('plugin', () => {
         const stubTest = (opts) => _.defaults(opts || {}, {pending: false});
 
         it('should create retry limiter', () => {
-            const hermione = stubHermione();
+            const hermione = stubTestplane();
 
             initPlugin(hermione);
 
@@ -92,7 +92,7 @@ describe('plugin', () => {
         });
 
         it('should pass limit options to retry limiter', () => {
-            const hermione = stubHermione();
+            const hermione = stubTestplane();
 
             initPlugin(hermione, {limit: 0.9, timeLimit: 60});
 
@@ -102,7 +102,7 @@ describe('plugin', () => {
         });
 
         it('should pass total test count to retry limiter', () => {
-            const hermione = stubHermione();
+            const hermione = stubTestplane();
 
             initPlugin(hermione);
 
@@ -113,7 +113,7 @@ describe('plugin', () => {
         });
 
         it('should not consider pending tests in a total tests count', () => {
-            const hermione = stubHermione();
+            const hermione = stubTestplane();
 
             initPlugin(hermione);
 
@@ -128,7 +128,7 @@ describe('plugin', () => {
         });
 
         it('should not consider disabled tests in a total tests count', () => {
-            const hermione = stubHermione();
+            const hermione = stubTestplane();
 
             initPlugin(hermione);
 
