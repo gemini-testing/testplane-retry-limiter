@@ -1,6 +1,6 @@
 {
   "name": "@testplane/retry-limiter",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Plugin for Testplane to disable retries at runtime",
   "scripts": {
     "coverage": "nyc npm run test",
